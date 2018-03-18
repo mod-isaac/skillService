@@ -75,3 +75,13 @@ def getUpdateChunck(limit,dataList):
         for key,value in item.items():
             if value not in test_terms:
                 updateOccurrences(value,dataList)
+
+def mongoTopFrequencyTerms(limit):
+    topFreqList = []
+    dataDict = list (col.find({},{"name":1, "_id":0}).limit(limit).sort("freq", pymongo.DESCENDING))
+    for item in dataDict:
+        for key,value in item.items():
+            topFreqList.append(value)
+    #col.find({"occurrences":"null"},{"name":1, "_id":0}).limit(limit).sort({"freq":-1})
+
+    return topFreqList
