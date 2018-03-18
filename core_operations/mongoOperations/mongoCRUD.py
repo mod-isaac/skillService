@@ -1,25 +1,38 @@
 import pymongo
+from pymongo import MongoClient
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-def uniqueBulckPost(dataList,dbName,col):
-    db = pymongo.MongoClient().baytSkills
+from dataConnectionManager.connectionManager import dbCon
+
+MongoInfoList = dbCon.mongodbConnectionInfo()
+
+client      = MongoInfoList[0]
+pool        = MongoInfoList[1]
+collection  = MongoInfoList[2]
+
+db   = client[pool]
+col  = db[collection]
+
+def uniqueBulckPost(dataList):
+    from progressbar import ProgressBar
+    pbar = ProgressBar()
+    print("START INSERTING TO MONGO")
     try:
-        for key, value in dict(dataList).items():
-            db.new_skills.insert_many([{'name': key.lower(), 'freq': value}]).inserted_ids
-            print(key.lower(),"    Insertrd")
+        for key, value in pbar(dict(dataList).items()):
+            col.insert_many([{'name': key.lower(), 'freq': value, 'occurrences':'null'}]).inserted_ids
     except Exception as e:
         print (e)
 
 def findOccurrences(dataDict,name):
-    print(name)
     import itertools
     import sys
     dictlist = []
     jsonlist = []
     insertBulck = False
-    db = pymongo.MongoClient().baytSkills
     for key, val in dataDict.items():
         if len(dataDict) == 1 or not dataDict:
-            db.new_skills.update({'name':name}, {'$set':{"occurrences":"NONE"}})
+            col.update({'name':name}, {'$set':{"occurrences":"NONE"}})
         else:
             for key, val in dataDict.items():
                     temp = ['item',key,'occur',val]
@@ -36,7 +49,7 @@ def findOccurrences(dataDict,name):
             for block in subCunck:
                 jsonlist.append(dict(itertools.zip_longest(*[iter(block)] * 2, fillvalue="")))
             try:
-                db.new_skills.update({'name':name}, {'$set':{"occurrences":jsonlist}})
+                col.update({'name':name}, {'$set':{"occurrences":jsonlist}})
             except Exception as e:
                 print(e)
 
@@ -55,9 +68,9 @@ def updateOccurrences(name,dataList):
 
 test_terms = ["english", "arabic", "urdu", "hindi", "الانجليزية", "french", "العربية", "malayalam"]
 def getUpdateChunck(limit,dataList):
-    db = pymongo.MongoClient().baytSkills
+    #db = pymongo.MongoClient().baytSkills
     #names_list = list(db.new_skills.find({"occurrences":"null"},{"name":True, "_id":False}).limit(limit).sort("freq", pymongo.DESCENDING))
-    names_list = list(db.new_skills.find({"occurrences":"null"},{"name":True, "_id":False}).limit(limit))
+    names_list = list(col.find({"occurrences":"null"},{"name":True, "_id":False}).limit(limit))
     for item in names_list:
         for key,value in item.items():
             if value not in test_terms:

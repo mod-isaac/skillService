@@ -11,8 +11,3 @@ CUNCK_LIMIT                     =   1000
 TABLE                           =   'cvSearchInterfaceStemmed'
 MAX_CVID                        =   0
 SHPINX_SERVICE                  =   'baytSkillsAnalyser'
-################################Mongo I/O INFO####################################
-MONGO_POOL                      =   'baytSkills'
-
-MONGO_COLLECTION                =   'byt_skills'
-MONGO_SERVICE                   =   'baytSkillsAnalyser'

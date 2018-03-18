@@ -21,10 +21,6 @@ class dataPreparing(object):
         self.shpinxService          = skillsInfoConfig.SHPINX_SERVICE
         self.shpinxMax_CVID         = skillsInfoConfig.MAX_CVID
 
-        ###Mongodb I/O INFO###
-        self.mongoDB                = skillsInfoConfig.MONGO_POOL
-        self.mongoCOL               = skillsInfoConfig.MONGO_COLLECTION
-        self.mongoService           = skillsInfoConfig.MONGO_SERVICE
     def getIds(self):
         """Returning cv ids in list structure"""
         query = shpinxQueryGenerator(        self.shpinxLimit,
@@ -53,8 +49,7 @@ class dataPreparing(object):
 
     def writeToMongodb(self):
         from mongoOperations import mongoCRUD
-        dbCon.mongodbConnection(self.mongoDB,self.mongoCOL,self.mongoService)
-        #mongoCRUD.uniqueBulckPost(self.getSkills(1),self.mongoDB,self.mongoCOL)
+        #mongoCRUD.uniqueBulckPost(self.getSkills(1))
         mongoCRUD.getUpdateChunck(100000,self.getSkills(False))
 
 def main(argv):

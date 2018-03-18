@@ -32,3 +32,7 @@ PG_CORE_HOST                    =   '192.168.6.23'
 PG_CORE_PORT                    =   '5432'
 PG_CORE_USERNAME                =   'baytpg'
 PG_CORE_PASSWORD                =   'casi02'
+################################Mongo I/O INFO####################################
+MONGO_POOL                      =   'skills'
+MONGO_COLLECTION                =   'skills_info'
+MONGO_SERVICE                   =   'baytSkillsAnalyser'
