@@ -68,12 +68,10 @@ def updateOccurrences(name,dataList):
 
 test_terms = ["english", "arabic", "urdu", "hindi", "الانجليزية", "french", "العربية", "malayalam"]
 def getUpdateChunck(limit,dataList):
-    #db = pymongo.MongoClient().baytSkills
-    #names_list = list(db.new_skills.find({"occurrences":"null"},{"name":True, "_id":False}).limit(limit).sort("freq", pymongo.DESCENDING))
     names_list = list(col.find({"occurrences":"null"},{"name":True, "_id":False}).limit(limit))
     for item in names_list:
         for key,value in item.items():
-            if value not in test_terms:
+            if value in test_terms:
                 updateOccurrences(value,dataList)
 
 def mongoTopFrequencyTerms(limit):
@@ -82,6 +80,29 @@ def mongoTopFrequencyTerms(limit):
     for item in dataDict:
         for key,value in item.items():
             topFreqList.append(value)
-    #col.find({"occurrences":"null"},{"name":1, "_id":0}).limit(limit).sort({"freq":-1})
-
     return topFreqList
+
+def mongoTopOccurrences(skill,limit):
+    print(limit)
+    import itertools
+    import operator
+    allOccur = list (col.aggregate([{"$match": {"name":skill}}, {"$unwind": "$occurrences"}, {"$sort": {"occurrences.occur": -1}}, {"$group": {"_id": "$_id", "occurrences": {"$push": "$occurrences"}}}]))
+    allOccur = allOccur[0]
+    del allOccur['_id']
+    occurrencesList = allOccur['occurrences']
+    occurrencesList = [dict(t) for t in set([tuple(d.items()) for d in occurrencesList])]
+    tempOccurrencesList = []
+    for i in occurrencesList:
+        for key, val in i.items():
+            tempOccurrencesList.append(val)
+    orderedDict     = dict(itertools.zip_longest(*[iter(tempOccurrencesList)] * 2, fillvalue=""))
+    sortedDict      = sorted(orderedDict.items(), key=operator.itemgetter(1))
+    sortedDict      = sortedDict[::-1]
+
+    if limit == "null":
+        return(dict(sortedDict))
+    else:
+        return(dict(sortedDict[:limit]))
+
+def addHappiningFrequency(skill):
+    pass
