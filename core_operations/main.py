@@ -50,9 +50,12 @@ class dataPreparing(object):
     def writeToMongodb(self):
         from mongoOperations import mongoCRUD
         #mongoCRUD.uniqueBulckPost(self.getSkills(1))
-        mongoCRUD.getUpdateChunck(100000,self.getSkills(False))
+        #mongoCRUD.getUpdateChunck(100000,self.getSkills(False))
 
-        #print (mongoCRUD.mongoTopOccurrences("css", 10))
+        print (mongoCRUD.mongoTopOccurrences("java",100,10,True))
+        #mongoCRUD.addEventsFrequency()
+        #print(mongoCRUD.mongoTopFrequencyTerms(10))
+
 
 def main(argv):
     """SERVICE entry point.

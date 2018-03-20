@@ -20,7 +20,7 @@ def uniqueBulckPost(dataList):
     print("START INSERTING TO MONGO")
     try:
         for key, value in pbar(dict(dataList).items()):
-            col.insert_many([{'name': key.lower(), 'freq': value, 'occurrences':'null'}]).inserted_ids
+            col.insert_many([{'name': key.lower(), 'freq': value, 'occurrences':'null', 'events':-1}]).inserted_ids
     except Exception as e:
         print (e)
 
@@ -66,13 +66,11 @@ def updateOccurrences(name,dataList):
     findOccurrences(dict(newList),name)
 
 
-test_terms = ["english", "arabic", "urdu", "hindi", "الانجليزية", "french", "العربية", "malayalam"]
 def getUpdateChunck(limit,dataList):
     names_list = list(col.find({"occurrences":"null"},{"name":True, "_id":False}).limit(limit))
     for item in names_list:
         for key,value in item.items():
-            if value in test_terms:
-                updateOccurrences(value,dataList)
+            updateOccurrences(value,dataList)
 
 def mongoTopFrequencyTerms(limit):
     topFreqList = []
@@ -82,27 +80,84 @@ def mongoTopFrequencyTerms(limit):
             topFreqList.append(value)
     return topFreqList
 
-def mongoTopOccurrences(skill,limit):
-    print(limit)
+def mongoTopOccurrences(skill,limit="DEAFULT",execlude="DEAFULT",removeOne=False):
     import itertools
     import operator
     allOccur = list (col.aggregate([{"$match": {"name":skill}}, {"$unwind": "$occurrences"}, {"$sort": {"occurrences.occur": -1}}, {"$group": {"_id": "$_id", "occurrences": {"$push": "$occurrences"}}}]))
     allOccur = allOccur[0]
     del allOccur['_id']
     occurrencesList = allOccur['occurrences']
-    occurrencesList = [dict(t) for t in set([tuple(d.items()) for d in occurrencesList])]
+    emptySymbols = ['NONE', 'null']
+    if len(allOccur) == 0 or occurrencesList[0] in emptySymbols:
+        return 0
+    try:
+        occurrencesList = [dict(t) for t in set([tuple(d.items()) for d in occurrencesList])]
+    except Exception as e:
+        print ('>>>>>>>>>>> ', occurrencesList,' >>>>>>>>>>>', e)
+        pass
     tempOccurrencesList = []
+
     for i in occurrencesList:
         for key, val in i.items():
             tempOccurrencesList.append(val)
-    orderedDict     = dict(itertools.zip_longest(*[iter(tempOccurrencesList)] * 2, fillvalue=""))
-    sortedDict      = sorted(orderedDict.items(), key=operator.itemgetter(1))
-    sortedDict      = sortedDict[::-1]
+    orderedDict         = dict(itertools.zip_longest(*[iter(tempOccurrencesList)] * 2, fillvalue=""))
+    sortedDict          = sorted(orderedDict.items(), key=operator.itemgetter(1))
+    sortedDict          = sortedDict[::-1]
 
-    if limit == "null":
-        return(dict(sortedDict))
+    if removeOne == True:
+        tempDataDict = { k:v for k,v in dict(sortedDict).items() if v!=1 }
+        tempSortedDict = []
+        for key, val in tempDataDict.items():
+            tempTuple = (key,val)
+            tempSortedDict.append(tempTuple)
+
+        sortedDict = tempSortedDict
+
+
+    if limit == "DEAFULT":
+        dataDict = (dict(sortedDict))
     else:
-        return(dict(sortedDict[:limit]))
+        dataDict = (dict(sortedDict[:limit]))
 
-def addHappiningFrequency(skill):
+    if execlude == "DEAFULT":
+        return dataDict
+    else:
+        skillsToExeclude    = mongoTopFrequencyTerms(execlude)
+        for execItem in skillsToExeclude:
+            try:
+                del dataDict [execItem]
+            except Exception as e:
+                pass
+    return dataDict
+
+def getCleanSkillsNames(rowList):
+    cleanNamesList = []
+    for nameEntity in rowList:
+        cleanNamesList.append(nameEntity['name'])
+    return cleanNamesList
+
+def checkIfSharedSkill(prmSkill,opSkill):
+    operationalSkillsList = mongoTopOccurrences(opSkill)
+    if operationalSkillsList == 0:
+        return False
+    existence = False
+    for key in operationalSkillsList.keys():
+        if key == prmSkill:
+            existence = True
+    return existence
+
+def addEventsFrequency():
+    ## To be continued
+    from progressbar import ProgressBar
+    pbar = ProgressBar()
+    count = col.count()
+    primaryRowSkills        =   getCleanSkillsNames(list (col.find({"events":-1}, {"name":1, "_id":0}).limit(10)))
+    operationalRowSkills    =   getCleanSkillsNames(list (col.find({}, {"name":1, "_id":0})))[:10000]
+    c = 0
+    for i in pbar(operationalRowSkills):
+        if i != "english" and checkIfSharedSkill("english",i) == True:
+            c = c +1
+    print (c)
+
+def addEventsFrequency():
     pass
