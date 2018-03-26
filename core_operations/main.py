@@ -50,9 +50,9 @@ class dataPreparing(object):
     def writeToMongodb(self):
         from mongoOperations import mongoCRUD
         #mongoCRUD.uniqueBulckPost(self.getSkills(1))
-        #mongoCRUD.getUpdateChunck(100000,self.getSkills(False))
-
-        print (mongoCRUD.mongoTopOccurrences("java",100,10,True))
+        #mongoCRUD.getUpdateChunck(100000,self.getSkills(False),"occurrences")
+        mongoCRUD.getUpdateChunck(100000,self.getSkills(False),"cluster")
+        #print(mongoCRUD.getSkillHierarchy("java swing",100))
         #mongoCRUD.addEventsFrequency()
         #print(mongoCRUD.mongoTopFrequencyTerms(10))
 

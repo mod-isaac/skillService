@@ -20,7 +20,7 @@ def uniqueBulckPost(dataList):
     print("START INSERTING TO MONGO")
     try:
         for key, value in pbar(dict(dataList).items()):
-            col.insert_many([{'name': key.lower(), 'freq': value, 'occurrences':'null', 'events':-1}]).inserted_ids
+            col.insert_many([{'name': key.lower(), 'freq': value, 'occurrences':'null','cluster':'null', 'events':-1}]).inserted_ids
     except Exception as e:
         print (e)
 
@@ -40,6 +40,7 @@ def findOccurrences(dataDict,name):
                     insertBulck = True
     listSize = round(((sys.getsizeof(dictlist) / 1048576) / 10)) + 10
     chunks = [dictlist[x:x+listSize] for x in range(0, len(dictlist), listSize)]
+    #To be updated
     chunks = chunks[:5000]
     from progressbar import ProgressBar
     pbar = ProgressBar()
@@ -52,7 +53,40 @@ def findOccurrences(dataDict,name):
                 col.update({'name':name}, {'$set':{"occurrences":jsonlist}})
             except Exception as e:
                 print(e)
-
+###########################################################
+def findCluster(name):
+    import itertools
+    import sys
+    dictlist = []
+    jsonlist = []
+    insertBulck = False
+    dataDict = getSkillHierarchy(name, 100)
+    if len(dataDict) == 0:
+        col.update({'name':name}, {'$set':{"cluster":"NONE"}})
+        return
+    for key, val in dataDict.items():
+        if len(dataDict) == 1 or not dataDict:
+            col.update({'name':name}, {'$set':{"cluster":"NONE"}})
+        else:
+            for key, val in dataDict.items():
+                    temp = ['item',key,'occur',val]
+                    dictlist.append(temp)
+                    insertBulck = True
+    listSize = round(((sys.getsizeof(dictlist) / 1048576) / 10)) + 10
+    chunks = [dictlist[x:x+listSize] for x in range(0, len(dictlist), listSize)]
+    chunks = chunks[:5000]
+    from progressbar import ProgressBar
+    pbar = ProgressBar()
+    if insertBulck:
+        print('\n=======================\nINSERTING ',name,' CLUSTER\n=======================')
+        for subCunck in pbar(chunks):
+            for block in subCunck:
+                jsonlist.append(dict(itertools.zip_longest(*[iter(block)] * 2, fillvalue="")))
+            try:
+                col.update({'name':name}, {'$set':{"cluster":jsonlist}})
+            except Exception as e:
+                print(e)
+###########################################################
 def updateOccurrences(name,dataList):
     from collections import Counter
     from itertools import chain
@@ -65,12 +99,15 @@ def updateOccurrences(name,dataList):
     newList = dict(Counter(newList))
     findOccurrences(dict(newList),name)
 
-
-def getUpdateChunck(limit,dataList):
-    names_list = list(col.find({"occurrences":"null"},{"name":True, "_id":False}).limit(limit))
+def getUpdateChunck(limit,dataList,field):
+    names_list = list(col.find({field:"null"},{"name":True, "_id":False}).limit(limit))
     for item in names_list:
         for key,value in item.items():
-            updateOccurrences(value,dataList)
+            if field == "occurrences":
+                updateOccurrences(value,dataList)
+            if field == "cluster":
+                print(value)
+                findCluster(value)
 
 def mongoTopFrequencyTerms(limit):
     topFreqList = []
@@ -110,7 +147,6 @@ def mongoTopOccurrences(skill,limit="DEAFULT",execlude="DEAFULT",removeOne=False
         for key, val in tempDataDict.items():
             tempTuple = (key,val)
             tempSortedDict.append(tempTuple)
-
         sortedDict = tempSortedDict
 
 
@@ -159,5 +195,27 @@ def addEventsFrequency():
             c = c +1
     print (c)
 
-def addEventsFrequency():
+def getHierarchyLevel(skill,limit):
+    importingLimit = 100
+    execludedLimit = 10
+    removeOnes     = True
+    if mongoTopOccurrences(skill,importingLimit,execludedLimit,removeOnes) == 0:
+        return 0
+    firstLevel     = list (mongoTopOccurrences(skill,importingLimit,execludedLimit,removeOnes).keys())
+    firstLevel     = firstLevel[:limit]
+    return firstLevel
+
+def getSkillHierarchy(skill,limit):
+    from collections import Counter
+    skillsClusterSet = []
+    intialLevel = getHierarchyLevel(skill,limit)
+    if intialLevel == 0:
+        return skillsClusterSet
+    for innerSkill in intialLevel:
+        skillsClusterSet.append(getHierarchyLevel(innerSkill,limit))
+    cluster = [item for sublist in skillsClusterSet for item in sublist]
+    cluster = dict(Counter (cluster))
+    return cluster
+
+def insertingSkillsCluster():
     pass
